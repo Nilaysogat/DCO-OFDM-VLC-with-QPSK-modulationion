@@ -1,0 +1,38 @@
+clc;
+clear all;
+
+%%%%%%% open the received signal file and print it %%%%%%%%%
+Text=fopen('DCO.txt','r');
+received_signal=fscanf(Text,'%f');
+fclose(Text);
+
+%%%%%% Variables %%%%%%%%%
+M=4;
+N=length(received_signal);
+N_symbol=N/log2(M)-1;
+r=0.95;
+%%%%% Parallel serial transformation %%%%%
+yreceived=received_signal.';
+
+%%%%%% Calculate the DC bias %%%%%
+sigma= 1/sqrt(N);
+Bdc=sigma*qfuncinv((1-r)/2);
+y_IFFT= yreceived - Bdc;
+
+%%%%% Converting to frequency domain from time domain %%%%%%%%
+y_freq = fft(y_IFFT);
+
+%%%%% Inverse Hermitian Transform %%%%%
+
+y_data = y_freq(2:1:N_symbol+1);
+
+%%%% PSK demodulation %%%%
+data = pskdemod(y_data,M,pi/4,'Gray'); 
+
+%%%% plot %%%%%
+data
+plot(data);
+xlabel('Time(Sec)');
+ylabel('Amplitude(Volts)');
+title(' data');
+save("data_rx.txt","data","-ascii");

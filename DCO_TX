@@ -1,0 +1,67 @@
+clear all
+clc;
+%%% systtem requirements%%%%%%%%%
+N=128;  %%%%% bits
+M=4; %%modülasyon seviyesi(alfabede 2 harf var 2 harfi ifade için 1 bitlik alan yeterli)
+N_symbol=N/log2(M)-1; %%%% bits/log2(M) 
+r=0.95; %doğruluk oranı
+%%%%%calling data%%%%%
+data = randi([0 M-1],N_symbol,1);  %random data input
+
+%%%%modulation%%%%%
+d = pskmod(data,M,pi/4,'Gray');              %psk modulation  
+
+stem (d)
+title('Qpsk mod');
+pause
+%scatterplot(d);
+%%%%% S/P Conversion %%%%%%
+sdata=reshape(d,N_symbol,[]).';
+
+%%%%Hermitian transform%%%%%
+xh=[0,sdata,0,fliplr(conj(sdata))];            %flipping to EQ.1
+
+%%%%Inverse FFT%%%%%
+xh_IFFT = ifft(xh);               %inverse transform EQ.2
+
+%%%% Calculate the proper DC value%%%% 
+sigma= 1/sqrt(N); %std(yh_IFFT); 
+Bdc=sigma*qfuncinv((1-r)/2);
+%%%%%Addition of DC%%%%
+xdc= xh_IFFT+Bdc;
+
+%%%% Crop the values smaller than 0 %%%%%
+%
+ xdc(xdc<=0) = 0;
+
+%%%% Plot the transmitted signal%%%%
+subplot(2,1,1);
+plot(data);
+xlabel('Time(Sec)');
+ylabel('Amplitude(Volts)');
+title(' data');
+pause
+subplot(2, 1, 2);
+
+plot(xh_IFFT);
+xlabel('Time(sec)');
+ylabel('amplitude');
+title(' Transformed data xh_IFFT');
+pause
+
+%%%%To show the difference%%%%%
+X_IFFT= ifft(sdata);
+subplot(2,1,1);
+plot(real(X_IFFT));
+title('to compare non hermitian fourier data X_IFFT');
+pause
+subplot(2,1,2);
+plot(xdc);
+xlabel('Time(sec)');
+ylabel('amplitude');
+title('DCO OFDM modulated data xdc');
+pause
+
+%%%% save %%%%
+save("DCO.txt","xdc","-ascii");
+save("data_tx.txt","data","-ascii");
